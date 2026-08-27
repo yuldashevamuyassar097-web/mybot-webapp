@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ro'yxatdan o'tish</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container { max-width: 400px; width: 100%; text-align: center; }
+        .logo { font-size: 64px; margin-bottom: 16px; }
+        h1 { font-size: 24px; margin-bottom: 8px; }
+        .subtitle { font-size: 14px; color: #8e8e8e; margin-bottom: 24px; }
+        .card {
+            background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card-icon { font-size: 48px; margin-bottom: 12px; }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+        .card-text { font-size: 14px; color: #8e8e8e; }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            transition: opacity 0.2s;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-success { background: #4CAF50; }
+        .status {
+            padding: 12px;
+            border-radius: 12px;
+            margin-top: 16px;
+            font-size: 14px;
+            display: none;
+        }
+        .status-success { display: block; background: rgba(76,175,80,0.15); color: #2e7d32; }
+        .status-error { display: block; background: rgba(244,67,54,0.15); color: #c62828; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🛡️</div>
+        <h1>Ro'yxatdan o'tish</h1>
+        <p class="subtitle">Xavfsizlikni ta'minlash uchun IP manzilingiz qayd etiladi</p>
+        
+        <div class="card">
+            <div class="card-icon">🌐</div>
+            <div class="card-title">IP manzilingiz qayd etiladi</div>
+            <div class="card-text">IP manzil faqat botning <strong>anti-cheat</strong> tizimi uchun ishlatiladi</div>
+        </div>
+        
+        <div id="status" class="status"></div>
+        
+        <button class="btn btn-success" id="registerBtn">
+            ✅ Ro'yxatdan o'tish
+        </button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
+        
+        const registerBtn = document.getElementById('registerBtn');
+        const statusDiv = document.getElementById('status');
+        
+        function showStatus(message, type = 'success') {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status status-' + type;
+        }
+        
+        async function register() {
+            registerBtn.disabled = true;
+            registerBtn.textContent = '⏳ Kutilmoqda...';
+            
+            try {
+                const initData = tg.initData;
+                if (!initData) {
+                    showStatus('❌ Telegram ma\'lumotlari topilmadi!', 'error');
+                    registerBtn.disabled = false;
+                    registerBtn.textContent = '✅ Qayta urinish';
+                    return;
+                }
+                
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ initData: initData })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    showStatus('✅ Ro\'yxatdan o\'tdingiz! IP manzilingiz qayd etildi.', 'success');
+                    registerBtn.textContent = '✅ Ro\'yxatdan o\'tdingiz!';
+                    setTimeout(() => tg.close(), 1500);
+                } else {
+                    showStatus('❌ Xatolik: ' + (data.message || 'Noma\'lum xatolik'), 'error');
+                    registerBtn.disabled = false;
+                    registerBtn.textContent = '✅ Qayta urinish';
+                }
+            } catch (error) {
+                showStatus('❌ Server bilan bog\'lanishda xatolik!', 'error');
+                registerBtn.disabled = false;
+                registerBtn.textContent = '✅ Qayta urinish';
+            }
+        }
+        
+        registerBtn.addEventListener('click', register);
+    </script>
+</body>
+</html>
